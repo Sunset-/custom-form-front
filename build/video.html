@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>视频</title>
+    <style>
+        .iframe-wrapper {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            right: 0px;
+            bottom: 0px;
+            overflow:hidden;
+        }
+
+        .top-title {
+            position: absolute;
+            top: 0px;
+            left: 50%;
+            transform: translate(-50%, 0);
+            background: #09c;
+            color: #FFF;
+            font-size: 2em;
+            z-index: 1;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="iframe-wrapper">
+        <div id="toptitle" class="top-title" style="display:none;"></div>
+        <iframe id="videoiframe" width="100%" height="100%" style="border:0px;" src=""></iframe>
+    </div>
+
+    <script src="/vendor/jquery.min.js"></script>
+    <script src="/vendor/sunset-ws.js"></script>
+    <script>
+        function GetQueryString(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return unescape(r[2]);
+            return null;
+        }
+
+        var iframeUrl = null;
+
+        function openVideo(room, target) {
+            document.getElementById('toptitle').innerHTML = target || '空闲';
+            var url = 'https://meet01.peami.com/' + room;
+            if (iframeUrl != url) {
+                document.getElementById('videoiframe').src = url;
+                window.focus();
+            }
+        }
+
+
+        var room = GetQueryString('room'),
+            target = decodeURI(GetQueryString('target'));
+        if (room) {
+            openVideo(room, (target == null || target == 'null') ? null : target);
+        }
+
+        //websocket
+        var equipmentId = GetQueryString('equipmentId');
+        if (equipmentId) {
+            var systemId = '9c14cab8b62246769596e62911a1afad';
+            $.ajax({
+                url : '/service/business/system/'+systemId
+            }).then(res=>{
+                if(res&&res.data){
+                    var config = null;
+                    try{
+                        config = eval('('+res.data.config+')');
+                    }catch(e){
+                        console.error(e);
+                    }
+                    if(config&&config.videoClinicWebsocketPrefix){
+                        openWebsocket(config.videoClinicWebsocketPrefix);
+                    }else{
+                        console.error('当前系统未配置videoClinicWebsocketPrefix');
+                    }
+                }
+            });
+
+            function openWebsocket(prefix){
+                alert(prefix)
+                // var topic = 'wss://192.168.0.171/wss/business/ws?clientId=' + equipmentId + '&clientType=EQUIPMENT';
+                // var topic = 'wss://beta.peami.com/wss/business/ws?clientId=' + equipmentId + '&clientType=EQUIPMENT';
+                var topic = prefix+'/business/ws?clientId=' + equipmentId + '&clientType=EQUIPMENT'
+                SunsetWebsocket.listen(topic, SunsetWebsocket.EVENTS.MESSAGE, function (res) {
+                    if (res.content) {
+                        if (res.content.messageType == 'MESSAGE') {
+                            // if (res.content.nextOne && res.content.nextOne.deptId) {
+                            //     //专家端设备
+                            //     openVideo(res.content.nextOne.deptId, res.content.nextOne.hospital.name + ':' + res
+                            //         .content
+                            //         .nextOne.patient.name);
+                                //专家端设备   添加视频会诊改动
+                            if(!res.content.nextOne.hospital||!res.content.nextOne.patient){
+                                openVideo(res.content.nextOne.deptId, res.content.nextOne.topic);
+                            }else if(res.content.nextOne && res.content.nextOne.deptId){
+                                openVideo(res.content.nextOne.deptId, res.content.nextOne.hospital.name + ':' + res
+                                .content
+                                .nextOne.patient.name);
+                            
+                            } else if (res.content.expert) {
+                                //医院端设备
+                                document.getElementById('toptitle').innerHTML = res.content.expert.name || '';
+                            } else {
+                                openVideo(equipmentId, '空闲');
+                            }
+                            
+                        }
+                    }
+                });
+                SunsetWebsocket.connect({
+                    url: topic,
+                    json: true
+                });
+            }
+
+            openVideo(equipmentId, '空闲');
+        }
+
+        //心跳
+        if (GetQueryString('close') !== 'false') {
+            setInterval(() => {
+                if (window.opener) {
+                    window.opener.GlobalVideoWindow = window;
+                } else {
+                    window.close();
+                }
+            }, 500)
+        }
+    </script>
+</body>
+
+</html>

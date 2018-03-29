@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>视频演示系统</title>
+</head>
+</head>
+
+<body style="background:#092f88;padding:10px;margin:0px;">
+    <div id="currentdate" class="date" style="color:#FFF;background:#15264e;height:50px;line-height:50px;text-align:center;font-size:24px;">
+        0000-00-00 00:00:00 星期三
+    </div>
+    <div style="position:absolute;top:60px;bottom:10px;left:10px;right:10px;color:#FFF;font-size:36px;border-right:1px solid #15264e;">
+        <div class="major" style="height:60%;font-size:0px;">
+            <div style="height:100%;display:inline-block;width:60%;overflow: hidden;vertical-align:top;font-size:30px;box-sizing:border-box;border-right:5px solid #15264e;">
+                <table style="width:100%;">
+                    <tbody id="patients">
+                    </tbody>
+                </table>
+            </div>
+            <div style="height:100%;display:inline-block;width:40%;vertical-align:top;">
+                <div style="height:60%;text-align:center;box-sizing:border-box;color:yellow;">
+                    <p style="font-size:30px;padding-top:5%;">当前</p>
+                    <p id="currentno" style="font-size:78px;margin:30px auto;"></p>
+                    <p id="currentnname" style="font-size:78px;margin:20px auto;"></p>
+                </div>
+            </div>
+        </div>
+        <div style="position:relative;height:40%;text-align:center;box-sizing:border-box;color:#FFF;font-size:0px;">
+            <div style="display:inline-block;height:100%;vertical-align:top;width:60%;font-size:30px;box-sizing:border-box;border-right:5px solid #15264e;">
+                <p style="font-size:30px;background:#15264e;padding:5px;margin-bottom:10px;">当前坐诊专家</p>
+                <div style="height:200px;margin-top:40px;display:inline-block;vertical-align:top;width:45%;padding-top:40px;font-size:40px;border-right:1px solid #555;box-sizing:border-box;">
+                    <span id="doctor-name"></span>
+                    <p id="doctor-level" style="font-size:18px;"></p>
+                </div>
+                <div style="height:200px;margin-top:40px;display:inline-block;vertical-align:top;width:45%;font-size:26px;">
+                    <p id="doctor-hospital" style="margin:30px auto;border-bottom:1px solid #555;padding-bottom:30px;"></p>
+                    <p id="doctor-office" style="margin:20px auto;"></p>
+                </div>
+            </div>
+            <div style="display:inline-block;height:100%;vertical-align:top;width:40%;">
+                <p style="font-size:30px;background:#15264e;padding:5px;margin-bottom:10px;">下一位</p>
+                <p id="nextno" style="font-size:40px;margin:30px auto;"></p>
+                <p id="nextname" style="font-size:40px;margin:20px auto;"></p>
+            </div>
+        </div>
+    </div>
+    <audio style="display:none;" id="global-broadcast-speek" src="/assets/audio/dingdong.mp3" controls="controls"></audio>
+
+    <script src="vendor/jquery.min.js"></script>
+    <script src="vendor/sunset-ws.js"></script>
+
+    <script>
+        // 队列
+        function GetQueryString(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return unescape(r[2]);
+            return null;
+        }
+        var hospitalId = GetQueryString('hospitalId');
+        window.refreshQueue = function (isTip) {
+            $.ajax({
+                url: '/service/business/videoQueue/current/expert',
+                data: {
+                    hospitalId: hospitalId
+                }
+            }).then(function (res) {
+                var filter = {
+                    pageNumber: 0,
+                    pageSize: 6,
+                    status: '1,2,3',
+                    order: 'ASC'
+                }
+                if (res.data.length) {
+                    filter.expertUserId = res.data.join(',');
+                } else {
+                    filter.hospitalId = hospitalId;
+                }
+                return $.ajax({
+                    url: '/service/business/videoQueue',
+                    data: filter
+                });
+            }).then(function (res) {
+                var list = res && res.data && res.data.rows || [];
+                if (list.length) {
+                    var first = list[0];
+                    $("#doctor-name").html(first.expert.name);
+                    $("#doctor-level").html({
+                        '1': '主任医师',
+                        '2': '副主任医师',
+                        '3': '主治医师',
+                        '4': '住院医师',
+                        '5': '主任技师',
+                        '6': '副主任技师',
+                        '7': '主管技师',
+                        '8': '技师',
+                        '9': '技士'
+                    }[first.expert.jobTitle]);
+                    $("#doctor-hospital").html(first.expert.hospital);
+                    $("#doctor-office").html(first.expert.dept);
+                }
+                var $patient = $('#patients').html('');
+                var doing = list.filter(function (item) {
+                    return item.status == '2';
+                });
+                $('#currentno').html('');
+                $('#currentnname').html('');
+                if (doing && doing.length) {
+                    var currentPatient = doing[0];
+                    $('#currentno').html(currentPatient.no);
+                    $('#currentnname').html(currentPatient.patient.name);
+                    if (isTip && currentPatient.hospitalId == hospitalId) {
+                        GlobalBroadcastSpeek(currentPatient.no + '号，' + currentPatient.patient.name +
+                            '，请到' + currentPatient.dept.equipName + '就诊。');
+                    }
+                }
+                var waits = list.filter(function (item) {
+                    return item.status != '2';
+                });
+                if (waits && waits.length) {
+                    $('#nextno').html(waits[0].no);
+                    $('#nextname').html(waits[0].patient.name);
+                } else {
+                    $('#nextno').html('');
+                    $('#nextname').html('');
+                }
+                waits.forEach(function (item) {
+                    $patient.append(
+                        `
+                    <tr id="patient-${item.no}">
+                        <td style="padding:20px 0px;text-align:center;">${item.no}</td>
+                        <td>${item.patient.name}</td>
+                        <td><label class="label-text">${item.status=='1'?'初诊':'复诊'}</label></td>
+                        <td><label class="label-text">${item.dept.equipName}</label></td>
+                        </tr>
+                    `
+                    );
+                });
+            })
+        }
+        window.refreshQueue(true);
+
+        //语音播报
+        var GlobalBroadcastSpeek = (function () {
+            var utterThis = null;
+            var speekTimer = null;
+            var speekTimer2 = null;
+            return function (text) {
+                var dingdong = document.getElementById('global-broadcast-speek');
+                if (!dingdong) {
+                    $('body').append(
+                        '<audio style="display:none;" id="global-broadcast-speek" src="/assets/audio/dingdong.mp3" controls="controls"></audio>'
+                    )
+                    dingdong = document.getElementById('global-broadcast-speek');
+                }
+                dingdong.play();
+                window.speechSynthesis.speaking && window.speechSynthesis.cancel(utterThis);
+                clearTimeout(speekTimer);
+                clearTimeout(speekTimer2);
+                speekTimer = setTimeout(function () {
+                    utterThis = new window.SpeechSynthesisUtterance(text);
+                    utterThis.lang = 'zh-cn';
+                    window.speechSynthesis.speak(utterThis);
+                    speekTimer2 = setTimeout(function () {
+                        window.speechSynthesis.speak(utterThis);
+                    }, 1000);
+                }, 2500);
+            }
+        })();
+
+        //心跳
+        setInterval(function () {
+            if (window.opener) {
+                window.opener.GlobalVideoQueueWindow = window;
+            } else {
+                window.close();
+            }
+            var now = new Date();
+            var week = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            $("#currentdate").html(
+                `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()<10?'0'+now.getMinutes():now.getMinutes()}:${now.getSeconds()<10?'0'+now.getSeconds():now.getSeconds()} ${week[now.getDay()]}`
+            )
+        }, 500)
+    </script>
+</body>
+
+</html>

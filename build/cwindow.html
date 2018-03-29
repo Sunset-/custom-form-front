@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<title>豌豆医学影像平台</title>
+<style>
+    .container {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        bottom: 0px;
+        left: 0px;
+        overflow: hidden;
+    }
+</style>
+</head>
+
+<body>
+    <div class="container">
+        <iframe width="100%" height="100%" id="cateyesIframe" src=""></iframe>
+    </div>
+
+    <script src="./vendor/jquery.min.js"></script>
+    <script>
+        $(window).on('keydown', function (e) {
+            if (e.keyCode == 116) {
+                e.preventDefault(); //组织默认刷新
+            }
+        });
+
+        function getQueryString(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return unescape(r[2]);
+            return null;
+        }
+
+        //初始化方法
+        function init(sunsetInitData) {
+            document.getElementById('cateyesIframe').src = "/cateyes/cateyes.html?studyIds=" + getQueryString('id') +
+                "&which=" + (getQueryString('which') || 'service') + "&show=" + (getQueryString('show') || 'false');
+        }
+        init();
+
+        //心跳
+        if (GetQueryString('close') !== 'false') {
+            setInterval(() => {
+                if (window.opener) {
+                    window.opener.GlobalVideoWindow = window;
+                } else {
+                    window.close();
+                }
+            }, 500)
+        }
+    </script>
+</body>
+
+</html>

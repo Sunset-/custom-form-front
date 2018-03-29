@@ -1,0 +1,158 @@
+.common_card {
+	width: 235px;
+	margin: 8px 0px 8px 10px;
+	font-size: 14px;
+	color: #444;
+	position: relative;
+	background: #d9f1ff;
+	border-radius: 0px 5px 5px 5px;
+	cursor: pointer;
+	&:before {
+		content: "";
+		position: absolute;
+		top: -5px;
+		left: -18px;
+		z-index: 3;
+		background-color: #fff;
+		padding: 0;
+		border: 1px solid #999;
+		border-radius: 50%;
+		width: 14px;
+		height: 14px;
+	}
+	&:after {
+		display: none;
+		content: "";
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		position: absolute;
+		z-index: 4;
+		left: -16px;
+		top: -3px;
+		background-color: #0099ff;
+	}
+	&>div {
+		line-height: 22px;
+		padding: 0 10px;
+		text-align: left;
+	}
+	.card_title {
+		border-radius: 5px 5px 0 0;
+		background: #62C0FF;
+		height: 30px;
+		line-height: 30px;
+		.card_creat_date {
+			color: #fff;
+			float: right;
+		}
+		&:before {
+			content: "";
+			width: 0;
+			height: 0;
+			border-top: 15px solid #62C0FF;
+			border-left: 15px solid transparent;
+			position: absolute;
+			left: -10px;
+		}
+	}
+	.card_content {
+		min-height: 22px;
+		word-wrap: break-word;
+		padding: 10px;
+	}
+	.card_footer {
+		text-align: right;
+		height: 30px;
+		line-height: 30px;
+		border-radius: 0 0 5px 5px;
+		border-top: 1px solid #ccc;
+		color: #666;
+	}
+	&.orange,
+	&.warning {
+		background: #FFF4DD;
+		.card_title {
+			background: #FFCC66;
+			&:before {
+				border-top: 15px solid #FFCC66;
+			}
+		}
+		.card_footer {
+			border-top: 1px solid #FFE4AC;
+		}
+	}
+	&.danger {
+		background: #FFD7D7;
+		.card_title {
+			background: #FD4649;
+			&:before {
+				border-top: 15px solid #FD4649;
+			}
+		}
+		.card_footer {
+			border-top: 1px solid #F69D9E;
+		}
+	}
+}
+
+.md-card.active {
+	.common_card {
+		&:before {
+			border: 1px solid #09F;
+		}
+		&:after {
+			display: block;
+		}
+	}
+}
+
+.md-card.new {
+	.common_card {
+		background: #fff;
+		border: 1px solid #ccc;
+		.card_title {
+			background: #F2F2F2;
+			&:before {
+				border-top: 10px solid #F2F2F2;
+				border-left: 10px solid transparent;
+				z-index: 1;
+				left: -8px;
+			}
+			&:after {
+				content: "";
+				width: 0;
+				height: 0;
+				border-top: 10px solid #ccc;
+				border-left: 10px solid transparent;
+				position: absolute;
+				left: -10px;
+				top: -1px;
+			}
+			.card_creat_date {
+				&:after {
+					color: #999 !important;
+				}
+			}
+		}
+		.card_footer {
+			border-top: 1px solid #ccc;
+		}
+	}
+}
+
+.md-card.editing {
+	.common_card {
+		.card_title {
+			.card_creat_date {
+				font-size: 0px;
+				&:after {
+					content: '编辑中';
+					color: #FFF;
+					float: right;
+					font-size: 14px;
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,44 @@
+.peaimage-container {
+    .sunset-form-field {
+        .sunset-field-label {
+            font-size: 14px;
+        }
+        &.required-field .sunset-field-label:before {
+            display: none;
+        }
+        &.required-field .sunset-field-label:after {
+            content: "*";
+            color: red;
+            padding: 0 2px;
+        }
+    }
+    // radio
+    .ivu-radio-group-button .ivu-radio-wrapper:hover {
+        color: $primary;
+    }
+    .ivu-radio-group-button .ivu-radio-wrapper-checked {
+        border-color: $primary;
+        color: $primary;
+        box-shadow: -1px 0 0 0 $primary;
+        &:first-child,
+        &:last-child {
+            border-color: $primary;
+            color: $primary;
+            box-shadow: -1px 0 0 0 $primary;
+        }
+    }
+    // tab
+    .ivu-tabs-nav{
+        .ivu-tabs-tab-active{
+            color: $primary;
+        }
+        .ivu-tabs-tab{
+            &:hover{
+                color: $primary;
+            }
+        }
+    }
+    .ivu-tabs-ink-bar{
+        background-color: $primary;
+    }
+}
